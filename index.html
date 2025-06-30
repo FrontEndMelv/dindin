@@ -265,9 +265,10 @@
         function populateWheels() {
             // Helper to populate a single wheel
             const populate = (wheelElement, items, key = null) => {
-                // Shuffle items for visual variety on each load and add multiple copies for a longer spin effect
-                const shuffled = [...items, ...items, ...items].sort(() => Math.random() - 0.5);
-                wheelElement.innerHTML = shuffled.map(item =>
+                // **THE FIX IS HERE:** The list is now triplicated but NOT shuffled.
+                // This keeps the visual order consistent with the original array order.
+                const wheelItems = [...items, ...items, ...items];
+                wheelElement.innerHTML = wheelItems.map(item =>
                     `<div class="wheel-item">${key ? item[key] : item}</div>`
                 ).join('');
             };
@@ -322,27 +323,38 @@
          */
         function spinTheWheel() {
             spinWheelBtn.disabled = true;
-            const spin = (wheelElement, items) => {
-                const randomIndex = Math.floor(Math.random() * items.length);
-                const selectedItem = items[randomIndex];
+
+            const spinTo = (wheelElement, indexToStopAt) => {
                 const itemHeight = wheelElement.querySelector('.wheel-item').offsetHeight;
                 const basePosition = Math.floor(wheelElement.children.length / 3);
-                const targetPosition = (basePosition + randomIndex) * itemHeight;
+                const targetPosition = (basePosition + indexToStopAt) * itemHeight;
                 wheelElement.style.transform = `translateY(-${targetPosition}px)`;
-                return selectedItem;
+            };
+
+            const cuisineIndex = Math.floor(Math.random() * cuisines.length);
+            const proteinIndex = Math.floor(Math.random() * proteins.length);
+            const methodIndex = Math.floor(Math.random() * methods.length);
+            const styleIndex = Math.floor(Math.random() * styles.length);
+            const carbIndex = Math.floor(Math.random() * carbs.length);
+
+            const components = {
+                cuisine: cuisines[cuisineIndex],
+                protein: proteins[proteinIndex],
+                method: methods[methodIndex],
+                style: styles[styleIndex],
+                carb: carbs[carbIndex]
             };
 
             setTimeout(() => {
-                const components = {};
-                components.cuisine = spin(wheelCuisine, cuisines);
+                spinTo(wheelCuisine, cuisineIndex);
                 setTimeout(() => {
-                    components.protein = spin(wheelProtein, proteins);
+                    spinTo(wheelProtein, proteinIndex);
                     setTimeout(() => {
-                        components.method = spin(wheelMethod, methods);
+                        spinTo(wheelMethod, methodIndex);
                         setTimeout(() => {
-                            components.style = spin(wheelStyle, styles);
+                            spinTo(wheelStyle, styleIndex);
                             setTimeout(() => {
-                                components.carb = spin(wheelCarb, carbs);
+                                spinTo(wheelCarb, carbIndex);
                                 renderSpinResult(components);
                                 spinWheelBtn.disabled = false;
                             }, 500);
@@ -626,3 +638,5 @@
 </body>
 
 </html>
+" is the selection in the original document.
+make the background more interest
