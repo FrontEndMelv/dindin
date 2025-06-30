@@ -45,6 +45,21 @@
             }
         }
 
+        /* Keyframe for spinning animation */
+        @keyframes spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .animate-spin-slow {
+            animation: spin 1.5s linear infinite;
+        }
+
         .animate-fade-in {
             animation: fade-in 0.5s ease-out forwards;
         }
@@ -128,18 +143,24 @@
             <!-- Action Button Section -->
             <div class="flex justify-center mb-8">
                 <button id="get-recipe-btn"
-                    class="flex items-center justify-center gap-3 px-8 py-4 bg-orange-600 text-white font-semibold rounded-lg shadow-lg hover:bg-orange-700 active:scale-95 transition-all duration-200">
+                    class="flex items-center justify-center gap-3 px-8 py-4 bg-orange-600 text-white font-semibold rounded-lg shadow-lg hover:bg-orange-700 active:scale-95 transition-all duration-200 disabled:opacity-75 disabled:cursor-wait">
                     <!-- Initial State -->
-                    <span>
+                    <span id="get-recipe-btn-content">
                         <i data-lucide="book-marked" class="inline-block h-6 w-6"></i>
                         Get a Classic Recipe
                     </span>
                 </button>
             </div>
 
+            <!-- Content Display Area for Classic Recipes -->
+            <main id="content-area" class="min-h-[250px] flex-grow">
+                <!-- Recipe Card Container (populated by JavaScript) -->
+                <div id="recipe-container"></div>
+            </main>
+
             <!-- Recipe Slot Machine Section -->
-            <div class="my-12 p-6 bg-stone-900/50 border border-stone-700 rounded-xl">
-                <h2 class="text-center text-2xl font-bold text-amber-400 mb-6">Create a New Recipe Idea</h2>
+            <div class="my-12 p-6 bg-stone-900/50 border-t border-b border-stone-700/50">
+                <h2 class="text-center text-2xl font-bold text-amber-400 mb-6">Or... Create a New Recipe Idea</h2>
                 <div class="wheel-container mb-6">
                     <!-- Cuisine Wheel -->
                     <div>
@@ -179,7 +200,7 @@
                 </div>
                 <div class="flex justify-center">
                     <button id="spin-wheel-btn"
-                        class="flex items-center justify-center gap-3 px-8 py-4 bg-teal-600 text-white font-semibold rounded-lg shadow-lg hover:bg-teal-700 active:scale-95 transition-all duration-200">
+                        class="flex items-center justify-center gap-3 px-8 py-4 bg-teal-600 text-white font-semibold rounded-lg shadow-lg hover:bg-teal-700 active:scale-95 transition-all duration-200 disabled:opacity-75 disabled:cursor-wait">
                         <i data-lucide="dices" class="inline-block h-6 w-6"></i>
                         Spin the Wheel!
                     </button>
@@ -188,15 +209,8 @@
                 <div id="generated-recipe-container" class="mt-8"></div>
             </div>
 
-
-            <!-- Content Display Area -->
-            <main id="content-area" class="min-h-[400px] flex-grow">
-                <!-- Recipe Card Container (populated by JavaScript) -->
-                <div id="recipe-container"></div>
-            </main>
-
             <!-- Footer Section with Buy Me a Coffee Link -->
-            <footer class="text-center pt-8 mt-auto border-t border-stone-800">
+            <footer class="text-center pt-8 mt-auto">
                 <p class="text-stone-500 mb-4">Enjoying this little app? Consider supporting its development!</p>
                 <a href="https://www.buymeacoffee.com/IFutureGames" target="_blank" rel="noopener noreferrer"
                     class="inline-flex items-center gap-2 px-5 py-2 bg-yellow-400 text-stone-900 font-semibold rounded-lg shadow-md hover:bg-yellow-300 transition-colors duration-200">
@@ -214,6 +228,7 @@
     <script>
         // --- DOM ELEMENT REFERENCES ---
         const getRecipeBtn = document.getElementById('get-recipe-btn');
+        const getRecipeBtnContent = document.getElementById('get-recipe-btn-content');
         const recipeContainer = document.getElementById('recipe-container');
         // Wheel references
         const spinWheelBtn = document.getElementById('spin-wheel-btn');
@@ -226,7 +241,6 @@
 
 
         // --- SECTION 1: PROCEDURAL GENERATION ENGINE ---
-        // These are the building blocks for creating unique, random recipes.
         const cuisines = [
             { name: 'Italian', country: 'Italy' }, { name: 'Mexican', country: 'Mexico' }, { name: 'Japanese', country: 'Japan' },
             { name: 'Indian', country: 'India' }, { name: 'Thai', country: 'Thailand' }, { name: 'French', country: 'France' },
@@ -259,14 +273,8 @@
             'Aromatic', 'Herby', 'Fiery', 'Comforting', 'Exotic'
         ];
 
-        /**
-         * Populates the spinning wheels with their respective options.
-         */
         function populateWheels() {
-            // Helper to populate a single wheel
             const populate = (wheelElement, items, key = null) => {
-                // **THE FIX IS HERE:** The list is now triplicated but NOT shuffled.
-                // This keeps the visual order consistent with the original array order.
                 const wheelItems = [...items, ...items, ...items];
                 wheelElement.innerHTML = wheelItems.map(item =>
                     `<div class="wheel-item">${key ? item[key] : item}</div>`
@@ -280,10 +288,6 @@
             populate(wheelStyle, styles);
         }
 
-        /**
-         * Renders the result of the wheel spin as a list of components and example ideas.
-         * @param {object} components - An object containing the selected items from the wheels.
-         */
         function renderSpinResult(components) {
             generatedRecipeContainer.innerHTML = '';
             const { cuisine, protein, method, style, carb } = components;
@@ -318,13 +322,10 @@
             lucide.createIcons();
         }
 
-        /**
-         * Spins the wheels and displays the component results.
-         */
         function spinTheWheel() {
             spinWheelBtn.disabled = true;
 
-            const spinTo = (wheelElement, indexToStopAt) => {
+            const spinTo = (wheelElement, indexToStopAt, items) => {
                 const itemHeight = wheelElement.querySelector('.wheel-item').offsetHeight;
                 const basePosition = Math.floor(wheelElement.children.length / 3);
                 const targetPosition = (basePosition + indexToStopAt) * itemHeight;
@@ -346,15 +347,15 @@
             };
 
             setTimeout(() => {
-                spinTo(wheelCuisine, cuisineIndex);
+                spinTo(wheelCuisine, cuisineIndex, cuisines);
                 setTimeout(() => {
-                    spinTo(wheelProtein, proteinIndex);
+                    spinTo(wheelProtein, proteinIndex, proteins);
                     setTimeout(() => {
-                        spinTo(wheelMethod, methodIndex);
+                        spinTo(wheelMethod, methodIndex, methods);
                         setTimeout(() => {
-                            spinTo(wheelStyle, styleIndex);
+                            spinTo(wheelStyle, styleIndex, styles);
                             setTimeout(() => {
-                                spinTo(wheelCarb, carbIndex);
+                                spinTo(wheelCarb, carbIndex, carbs);
                                 renderSpinResult(components);
                                 spinWheelBtn.disabled = false;
                             }, 500);
@@ -581,15 +582,15 @@
             const recipeCardHTML = `
                 <div class="bg-stone-800/50 backdrop-blur-sm border border-stone-700 rounded-xl shadow-2xl p-6 sm:p-8 animate-fade-in">
                     <!-- Recipe Header -->
-                    <div class="flex flex-col sm:flex-row justify-between sm:items-start gap-4 mb-6 border-b border-stone-700 pb-6">
+                    <div class="flex flex-col sm:flex-row justify-between sm:items-start gap-4">
                         <div>
                             <span class="text-sm font-semibold text-amber-400 uppercase tracking-wider">${recipe.country}</span>
                             <h2 class="text-3xl font-bold mt-1 text-white">${recipe.recipeName}</h2>
                             <p class="text-stone-300 mt-2 max-w-xl">${recipe.description}</p>
                         </div>
-                        <button onclick="handleFindRecipe('${recipe.recipeName}')" class="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-teal-600 text-white font-semibold rounded-md hover:bg-teal-700 transition-colors duration-200">
+                        <button onclick="handleFindRecipe('${recipe.recipeName}')" class="mt-4 sm:mt-0 flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-teal-600 text-white font-semibold rounded-md hover:bg-teal-700 transition-colors duration-200">
                             <i data-lucide="search" class="h-5 w-5"></i>
-                            Find Recipe on Google
+                            Find Recipe
                         </button>
                     </div>
                 </div>`;
@@ -603,9 +604,21 @@
          * Selects a random recipe from the PREDEFINED list and renders it.
          */
         function getRandomCuratedRecipe() {
-            const randomIndex = Math.floor(Math.random() * recipeIdeas.length);
-            const randomRecipe = recipeIdeas[randomIndex];
-            renderRecipe(randomRecipe);
+            getRecipeBtn.disabled = true;
+            getRecipeBtnContent.innerHTML = `<i data-lucide="loader" class="inline-block h-6 w-6 animate-spin-slow"></i> Finding a recipe...`;
+            lucide.createIcons();
+
+            // Use a timeout to simulate a "thinking" process and allow the UI to update
+            setTimeout(() => {
+                const randomIndex = Math.floor(Math.random() * recipeIdeas.length);
+                const randomRecipe = recipeIdeas[randomIndex];
+                renderRecipe(randomRecipe);
+
+                // Restore button state
+                getRecipeBtn.disabled = false;
+                getRecipeBtnContent.innerHTML = `<i data-lucide="book-marked" class="inline-block h-6 w-6"></i> Get a Classic Recipe`;
+                lucide.createIcons();
+            }, 500); // 0.5 second delay
         }
 
         /**
@@ -637,6 +650,4 @@
     </script>
 </body>
 
-</html>
-" is the selection in the original document.
-make the background more interest
+</ht
